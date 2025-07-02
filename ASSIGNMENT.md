@@ -25,7 +25,7 @@ At Solace, we aim to match patients with the advocate who is best suited to thei
 
 # The Assignment
 
-Download the repo: 
+Download the repo:
 
 [solace-candidate-assignment.zip](attachment:9975938a-5be0-4127-84dc-c45b5f6b2d05:solace-candidate-assignment.zip)
 
@@ -51,7 +51,7 @@ Feel free to be creative if you see any other improvements you think are worth s
 # Deliverables
 
 1. Submit the assignment with a link to the cloned repo with the PRs of your changes on the previous page in the **notes** section. If private, please add **alyant** to the GitHub project for the Senior Full Stack and Engineering Manager position. For the Staff Engineer position please add [thomasmarren](https://github.com/thomasmarren).
-2. Add whatever extra notes you want to `DISCUSSION.md` explaining any other improvements you’d want to make if you had more time.  Note that we aren't evaluating you on your familiarity with Markdown but feel free to add formatting if you wish.
+2. Add whatever extra notes you want to `DISCUSSION.md` explaining any other improvements you’d want to make if you had more time. Note that we aren't evaluating you on your familiarity with Markdown but feel free to add formatting if you wish.
 
 <aside>
 🎉 We'll review and get back to you as soon as possible. **If you are not comfortable making your assignment public, please reach out to the recruiting department and we will provide an alternative solution.**
