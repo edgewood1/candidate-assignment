@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 
 type Advocate = {
+  id: number;
   firstName: string;
   lastName: string;
   city: string;
@@ -12,9 +13,25 @@ type Advocate = {
   phoneNumber: number;
 };
 
+function useDebounce(fn: (...args: any[]) => void, delay: number) {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  return useCallback((...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  }, [fn, delay]);
+}
+
+
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   useEffect(() => {
     console.log("fetching advocates...");
@@ -26,31 +43,37 @@ export default function Home() {
     });
   }, []);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('advocates', advocates);
 
-    const searchTerm = e.target.value.toLowerCase();
-    console.log("searching for:", searchTerm);
-    // document.getElementById("search-term").innerHTML = searchTerm;
-
-    const filteredAdvocates = advocates.filter((advocate) => {
-      console.log("checking advocate:", advocate);
+  const filterAdvocates = useCallback((term: string) => {
+    const filtered = advocates.filter((advocate) => {
       return (
-        advocate.firstName.toLowerCase().includes(searchTerm) ||
-        advocate.lastName.toLowerCase().includes(searchTerm) ||
-        advocate.city.toLowerCase().includes(searchTerm) ||
-        advocate.degree.toLowerCase().includes(searchTerm) ||
+        advocate.firstName.toLowerCase().includes(term) ||
+        advocate.lastName.toLowerCase().includes(term) ||
+        advocate.city.toLowerCase().includes(term) ||
+        advocate.degree.toLowerCase().includes(term) ||
         advocate.specialties.some(specialty => 
-        specialty.toLowerCase().includes(searchTerm)
-      ) || advocate.yearsOfExperience.toString().includes(searchTerm) ||
-        advocate.phoneNumber.toString().includes(searchTerm)
+        specialty.toLowerCase().includes(term)
+      ) || advocate.yearsOfExperience.toString().includes(term) ||
+        advocate.phoneNumber.toString().includes(term)
       );
     });
 
-    setFilteredAdvocates(filteredAdvocates);
+    setFilteredAdvocates(filtered);
+  }, [advocates]);
+
+  const debouncedFilter = useDebounce(filterAdvocates, 300);
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    debouncedFilter(term);
   };
 
-  const onClick = () => {
-    console.log(advocates);
+  
+
+  const handleReset = () => {
+    setSearchTerm("");
     setFilteredAdvocates(advocates);
   };
 
@@ -62,15 +85,16 @@ export default function Home() {
       <div>
         <p>Search</p>
         <p>
-          Searching for: <span id="search-term"></span>
+          Searching for: <span>{searchTerm}</span>
         </p>
-        <input style={{ border: "1px solid black" }} onChange={onChange} />
-        <button onClick={onClick}>Reset Search</button>
+        <input style={{ border: "1px solid black" }} onChange={onChange} value={searchTerm} />
+        <button onClick={handleReset}>Reset Search</button>
       </div>
       <br />
       <br />
       <table>
         <thead>
+          <tr>
           <th>First Name</th>
           <th>Last Name</th>
           <th>City</th>
@@ -78,18 +102,19 @@ export default function Home() {
           <th>Specialties</th>
           <th>Years of Experience</th>
           <th>Phone Number</th>
+          </tr>
         </thead>
         <tbody>
           {filteredAdvocates.map((advocate) => {
             return (
-              <tr>
+              <tr key={advocate.id}>
                 <td>{advocate.firstName}</td>
                 <td>{advocate.lastName}</td>
                 <td>{advocate.city}</td>
                 <td>{advocate.degree}</td>
                 <td>
-                  {advocate.specialties.map((s) => (
-                    <div>{s}</div>
+                  {advocate.specialties.map((speciality, i) => (
+                    <div key={`${advocate.id}-speciality-${i}`}>{speciality}</div>
                   ))}
                 </td>
                 <td>{advocate.yearsOfExperience}</td>
