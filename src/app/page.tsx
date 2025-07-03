@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SearchBar } from "@/components/SearchBar";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Advocate = {
   id: number;
@@ -13,23 +14,6 @@ type Advocate = {
   yearsOfExperience: number;
   phoneNumber: number;
 };
-
-function useDebounce(fn: (...args: any[]) => void, delay: number) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  return useCallback(
-    (...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      timeoutRef.current = setTimeout(() => {
-        fn(...args);
-      }, delay);
-    },
-    [fn, delay]
-  );
-}
 
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
