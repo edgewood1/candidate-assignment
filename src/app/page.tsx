@@ -3,17 +3,10 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SearchBar } from "@/components/SearchBar";
 import { useDebounce } from "@/hooks/useDebounce";
-
-type Advocate = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  city: string;
-  degree: string;
-  specialties: string[];
-  yearsOfExperience: number;
-  phoneNumber: number;
-};
+import { TABLE_HEADERS } from "@/constants";
+import { Advocate } from "@/types";
+import { AdvocatesCardView } from "@/components/AdvocatesCardView";
+import { AdvocatesTable } from "@/components/AdvocatesTable";
 
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
@@ -64,27 +57,6 @@ export default function Home() {
     setFilteredAdvocates(advocates);
   };
 
-  const headers = [
-    "First Name",
-    "Last Name",
-    "City",
-    "Degree",
-    "Specialties",
-    "Years of Experience",
-    "Phone Number",
-  ];
-
-  function getAdvocateRowValues(advocate: Advocate) {
-    return [
-      advocate.firstName,
-      advocate.lastName,
-      advocate.city,
-      advocate.degree,
-      advocate.specialties,
-      advocate.yearsOfExperience,
-      advocate.phoneNumber,
-    ];
-  }
   return (
     <main style={{ margin: "24px" }} className="max-w-full">
       <h1 className="m-4 text-2xl font-bold text-gray-800 text-center">Solace Advocates</h1>
@@ -99,90 +71,13 @@ export default function Home() {
       </div>
       <SearchBar searchTerm={searchTerm} onChange={onChange} onReset={handleReset} />
       <div className="my-5"></div>
-      {/* table for desktop/tablet */}
-      <div className="hidden md:block overflow-x-auto shadow-md rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {headers.map((header) => (
-                <th
-                  key={header}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredAdvocates.map((advocate) => (
-              <tr key={advocate.id} className="hover:bg-gray-50">
-                {getAdvocateRowValues(advocate).map((value, idx) =>
-                  idx === 4 ? (
-                    <td key={idx} className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {advocate.specialties.map((specialty, i) => (
-                          <span
-                            key={`${advocate.id}-specialty-${i}`}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                          >
-                            {specialty}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  ) : (
-                    <td key={idx} className="px-6 py-4 whitespace-nowrap">
-                      {value}
-                    </td>
-                  )
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Card view for mobile */}
-      <div className="md:hidden space-y-4">
-        {filteredAdvocates.map((advocate) => (
-          <div
-            key={advocate.id}
-            className="bg-white rounded-lg shadow-md p-4 border border-gray-200"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">
-                  {advocate.firstName} {advocate.lastName}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {advocate.city} • {advocate.degree}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="font-medium">{advocate.yearsOfExperience} yrs exp</div>
-                <div className="text-sm text-gray-500">
-                  {advocate.phoneNumber.toString().replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <p className="text-xs uppercase font-medium text-gray-500 mb-1">Specialties</p>
-              <div className="flex flex-wrap gap-1">
-                {advocate.specialties.map((specialty, i) => (
-                  <span
-                    key={`${advocate.id}-specialty-${i}`}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {specialty}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Only render views when not loading */}
+      {!isLoading && (
+        <>
+          <AdvocatesTable advocates={filteredAdvocates} headers={TABLE_HEADERS} />
+          <AdvocatesCardView advocates={filteredAdvocates} />
+        </>
+      )}
 
       {/* Show message when no results */}
       {isLoading && (
