@@ -14,73 +14,84 @@ export default function Home() {
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10; // Number of items per page
 
-  const getCurrentPageData = () => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredAdvocates.slice(startIndex, endIndex);
-  };
+  // Single pagination state object
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 0,
+    hasMore: false,
+  });
 
-  const currentAdvocates = getCurrentPageData();
+  // Function to fetch paginated data
+  const fetchAdvocates = useCallback(
+    async (page = 1, searchTerm = "") => {
+      setIsLoading(true);
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetch("/api/advocates")
-      .then((response) => response.json())
-      .then((jsonResponse) => {
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
+      // Build URL with query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pagination.pageSize.toString(),
+      });
 
-        setIsLoading(false);
-      })
-      .catch((error) => {
+      if (searchTerm) {
+        params.append("search", searchTerm);
+      }
+
+      try {
+        const response = await fetch(`/api/advocates?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        setAdvocates(result.data);
+        setFilteredAdvocates(result.data);
+        setPagination({
+          page: result.meta.page,
+          pageSize: result.meta.pageSize,
+          total: result.meta.total,
+          totalPages: result.meta.totalPages,
+          hasMore: result.meta.hasMore,
+        });
+      } catch (error) {
         console.error("Error fetching advocates:", error);
+      } finally {
         setIsLoading(false);
-      });
-  }, []);
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    // Optionally scroll to top
-    window.scrollTo(0, 0);
-  };
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredAdvocates.length]);
-
-  const filterAdvocates = useCallback(
-    (term: string) => {
-      const filtered = advocates.filter((advocate) => {
-        return (
-          advocate.firstName.toLowerCase().includes(term) ||
-          advocate.lastName.toLowerCase().includes(term) ||
-          advocate.city.toLowerCase().includes(term) ||
-          advocate.degree.toLowerCase().includes(term) ||
-          advocate.specialties.some((specialty) => specialty.toLowerCase().includes(term)) ||
-          advocate.yearsOfExperience.toString().includes(term) ||
-          advocate.phoneNumber.toString().includes(term)
-        );
-      });
-
-      setFilteredAdvocates(filtered);
+      }
     },
-    [advocates]
+    [pagination.pageSize]
   );
 
-  const debouncedFilter = useDebounce(filterAdvocates, 300);
-
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    debouncedFilter(term);
-  };
+  // Initial data load
+  useEffect(() => {
+    fetchAdvocates(1);
+  }, [fetchAdvocates]);
 
   const handleReset = () => {
     setSearchTerm("");
-    setFilteredAdvocates(advocates);
+    fetchAdvocates(1, "");
+  };
+
+  // Search handler (debounced)
+  const handleSearch = useDebounce((term: string) => {
+    setPagination(prev => ({...prev, page: 1}));
+    fetchAdvocates(1, term);
+  }, 300);
+
+  // Update the onChange handler
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    handleSearch(term);
+  };
+
+  // Page change handler
+  const handlePageChange = (newPage: number) => {
+    fetchAdvocates(newPage, searchTerm);
   };
 
   return (
@@ -96,8 +107,8 @@ export default function Home() {
         {/* Only render views when not loading */}
         {!isLoading && filteredAdvocates.length > 0 && (
           <>
-            <AdvocatesTable advocates={currentAdvocates} headers={TABLE_HEADERS} />
-            <AdvocatesCardView advocates={currentAdvocates} />
+            <AdvocatesTable advocates={filteredAdvocates} headers={TABLE_HEADERS} />
+            <AdvocatesCardView advocates={filteredAdvocates} />
           </>
         )}
 
@@ -107,6 +118,7 @@ export default function Home() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         )}
+        {/* No results message */}
         {!isLoading && filteredAdvocates.length === 0 && (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <p className="text-gray-500">No advocates found matching your search criteria.</p>
@@ -118,9 +130,9 @@ export default function Home() {
       {!isLoading && filteredAdvocates.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0">
           <Pagination
-            currentPage={currentPage}
-            totalItems={filteredAdvocates.length}
-            pageSize={pageSize}
+            currentPage={pagination.page}
+            totalItems={pagination.total}
+            pageSize={pagination.pageSize}
             onPageChange={handlePageChange}
           />
         </div>
