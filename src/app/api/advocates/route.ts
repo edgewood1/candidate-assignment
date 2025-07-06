@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../db";
-import { advocates } from "../../../db/schema";
-import { sql, count, like } from "drizzle-orm";
+import db from "@/db";
+import { advocates } from "@/db/schema";
+import { sql, count } from "drizzle-orm";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +17,10 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * pageSize;
 
     // query is used to fetch paginated data;
-    let query = db.select().from(advocates);
+    const query = db.select().from(advocates);
 
     // countQuery is used to get the total number of records that match your filters
-    let countQuery = db.select({ count: count(advocates.id) }).from(advocates);
+    const countQuery = db.select({ count: count() }).from(advocates);
 
     // Apply search filter if searchTerm is provided
     if (searchTerm) {
@@ -32,15 +34,15 @@ export async function GET(request: NextRequest) {
     ${advocates.phoneNumber}::text LIKE ${`%${searchTerm}%`}
   `;
 
-      query = query.where(searchFilter);
-      countQuery = countQuery.where(searchFilter);
+      query.where(searchFilter);
+      countQuery.where(searchFilter);
     }
 
     // Apply pagination
-    query = query.limit(pageSize).offset(offset);
+    const paginatedQuery = query.limit(pageSize).offset(offset);
 
     // Execute both queries in parallel
-    const [data, totalCount] = await Promise.all([query, countQuery]);
+    const [data, totalCount] = await Promise.all([paginatedQuery, countQuery]);
 
     // Return paginated data with metadata
     return NextResponse.json({
@@ -52,6 +54,12 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount[0].count / pageSize),
         hasMore: page * pageSize < totalCount[0].count,
       },
+    },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        }
+      
     });
   } catch (error) {
     console.error("API error:", error);
