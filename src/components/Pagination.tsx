@@ -17,7 +17,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  // Don't render pagination if there's only one page
   if (totalPages <= 1) return null;
 
   return (

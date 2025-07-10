@@ -26,19 +26,13 @@ interface AdvocatesClientPageProps {
 const API_URL = "/api/mock-advocates"; 
 
 export default function AdvocatesClientPage({ initialData }: AdvocatesClientPageProps) {
-  // Initialize state with server-provided data
-  
   const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(initialData.meta.page);
   const pageSize = initialData.meta.pageSize;
-  
-    // Replace fetch with React Query
+
   const { data, isLoading } = useQuery({
     queryKey: ['advocates', page, searchTerm, pageSize],
     queryFn: async () => {
-        console.log('calling API with params:', { page, searchTerm, pageSize });
-
-      // Build URL with query parameters
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -56,13 +50,10 @@ export default function AdvocatesClientPage({ initialData }: AdvocatesClientPage
 
       return response.json();
     },
-    // Use initial data for first query
     initialData: page === 1 && searchTerm === "" ? initialData : undefined,
     
   });
   
-
-  // Extract data from query result
   const advocates = data?.data || [];
   const pagination = data?.meta || initialData.meta;
 
@@ -71,19 +62,16 @@ export default function AdvocatesClientPage({ initialData }: AdvocatesClientPage
     setPage(1);
   };
 
-  // Search handler (debounced)
   const handleSearch = useDebounce((term: string) => {
     setPage(1);
   }, 300);
 
-  // Update the onChange handler
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
     handleSearch(term);
   };
 
-  // Page change handler
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
   };
