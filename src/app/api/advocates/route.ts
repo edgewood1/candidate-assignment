@@ -1,12 +1,68 @@
-import db from "../../../db";
-import { advocates } from "../../../db/schema";
-import { advocateData } from "../../../db/seed/advocates";
+import { NextRequest, NextResponse } from "next/server";
+import db from "@/db";
+import { advocates } from "@/db/schema";
+import { sql, count } from "drizzle-orm";
 
-export async function GET() {
-  // Uncomment this line to use a database
-  // const data = await db.select().from(advocates);
+export const dynamic = 'force-dynamic';
 
-  const data = advocateData;
+export async function GET(request: NextRequest) {
+  try {
+    // Parse query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+    const searchTerm = searchParams.get("search") || "";
 
-  return Response.json({ data });
+    // Calculate offset for pagination
+    const offset = (page - 1) * pageSize;
+
+    // query is used to fetch paginated data;
+    const query = db.select().from(advocates);
+
+    // countQuery is used to get the total number of records that match your filters
+    const countQuery = db.select({ count: count() }).from(advocates);
+
+    // Apply search filter if searchTerm is provided
+    if (searchTerm) {
+      const searchFilter = sql`
+    LOWER(${advocates.firstName}) LIKE ${`%${searchTerm}%`} OR
+    LOWER(${advocates.lastName}) LIKE ${`%${searchTerm}%`} OR
+    LOWER(${advocates.city}) LIKE ${`%${searchTerm}%`} OR
+    LOWER(${advocates.degree}) LIKE ${`%${searchTerm}%`} OR
+    ${advocates.specialties}::text LIKE ${`%${searchTerm}%`} OR
+    ${advocates.yearsOfExperience}::text LIKE ${`%${searchTerm}%`} OR
+    ${advocates.phoneNumber}::text LIKE ${`%${searchTerm}%`}
+  `;
+
+      query.where(searchFilter);
+      countQuery.where(searchFilter);
+    }
+
+    // Apply pagination
+    const paginatedQuery = query.limit(pageSize).offset(offset);
+
+    // Execute both queries in parallel
+    const [data, totalCount] = await Promise.all([paginatedQuery, countQuery]);
+
+    // Return paginated data with metadata
+    return NextResponse.json({
+      data,
+      meta: {
+        page,
+        pageSize,
+        total: totalCount[0].count,
+        totalPages: Math.ceil(totalCount[0].count / pageSize),
+        hasMore: page * pageSize < totalCount[0].count,
+      },
+    },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        }
+      
+    });
+  } catch (error) {
+    console.error("API error:", error);
+    return NextResponse.json({ error: "Failed to fetch advocates" }, { status: 500 });
+  }
 }
