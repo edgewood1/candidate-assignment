@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+
+type Advocate = {
+  firstName: string;
+  lastName: string;
+  city: string;
+  degree: string; 
+  specialties: string[];
+  yearsOfExperience: number;
+  phoneNumber: number;
+};
 
 export default function Home() {
-  const [advocates, setAdvocates] = useState([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState([]);
+  const [advocates, setAdvocates] = useState<Advocate[]>([]);
+  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
 
   useEffect(() => {
     console.log("fetching advocates...");
@@ -16,20 +26,23 @@ export default function Home() {
     });
   }, []);
 
-  const onChange = (e) => {
-    const searchTerm = e.target.value;
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
-    document.getElementById("search-term").innerHTML = searchTerm;
+    const searchTerm = e.target.value.toLowerCase();
+    console.log("searching for:", searchTerm);
+    // document.getElementById("search-term").innerHTML = searchTerm;
 
-    console.log("filtering advocates...");
     const filteredAdvocates = advocates.filter((advocate) => {
+      console.log("checking advocate:", advocate);
       return (
-        advocate.firstName.includes(searchTerm) ||
-        advocate.lastName.includes(searchTerm) ||
-        advocate.city.includes(searchTerm) ||
-        advocate.degree.includes(searchTerm) ||
-        advocate.specialties.includes(searchTerm) ||
-        advocate.yearsOfExperience.includes(searchTerm)
+        advocate.firstName.toLowerCase().includes(searchTerm) ||
+        advocate.lastName.toLowerCase().includes(searchTerm) ||
+        advocate.city.toLowerCase().includes(searchTerm) ||
+        advocate.degree.toLowerCase().includes(searchTerm) ||
+        advocate.specialties.some(specialty => 
+        specialty.toLowerCase().includes(searchTerm)
+      ) || advocate.yearsOfExperience.toString().includes(searchTerm) ||
+        advocate.phoneNumber.toString().includes(searchTerm)
       );
     });
 
